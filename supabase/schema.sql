@@ -29,9 +29,11 @@ create table if not exists public.exam_attempts (
 alter table public.profiles enable row level security;
 alter table public.exam_attempts enable row level security;
 
+drop policy if exists "read own profile" on public.profiles;
 create policy "read own profile" on public.profiles
   for select to authenticated using (id = auth.uid());
 
+drop policy if exists "read own attempts" on public.exam_attempts;
 create policy "read own attempts" on public.exam_attempts
   for select to authenticated using (user_id = auth.uid());
 
@@ -305,16 +307,17 @@ begin
 end;
 $$;
 
-create or replace function public.get_leaderboard(p_exam_version text)
+drop function if exists public.get_leaderboard(text);
+create function public.get_leaderboard(p_exam_version text)
 returns table (
-  full_name text, employee_id text, position text,
+  full_name text, employee_id text, job_position text,
   score numeric, max_score numeric, duration_seconds integer, submitted_at timestamptz
 )
 language sql
 security definer
 set search_path = public
 as $$
-  select p.full_name, p.employee_id, p.position,
+  select p.full_name, p.employee_id, p.position as job_position,
          a.score, a.max_score, a.duration_seconds, a.submitted_at
   from public.exam_attempts a
   join public.profiles p on p.id = a.user_id

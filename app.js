@@ -402,7 +402,7 @@ async function renderLeaderboard() {
   try {
     const rows = await api.rpc("get_leaderboard", { p_exam_version: config.examVersion });
     if (!rows?.length) { target.innerHTML = '<div class="empty-state">ยังไม่มีผู้ส่งคำตอบ</div>'; return; }
-    target.innerHTML = `<div class="table-wrap"><table><thead><tr><th>อันดับ</th><th>ชื่อ–นามสกุล</th><th>รหัสพนักงาน</th><th>ตำแหน่ง</th><th>คะแนน</th><th>เวลา</th><th>วันที่ส่ง</th></tr></thead><tbody>${rows.map((row, index) => `<tr><td class="rank">${index + 1}</td><td>${escapeHtml(row.full_name)}</td><td>${escapeHtml(row.employee_id)}</td><td>${escapeHtml(row.position)}</td><td><span class="score-pill">${row.score}/${row.max_score}</span></td><td>${formatDuration(row.duration_seconds)}</td><td>${new Date(row.submitted_at).toLocaleString("th-TH")}</td></tr>`).join("")}</tbody></table></div>`;
+    target.innerHTML = `<div class="table-wrap"><table><thead><tr><th>อันดับ</th><th>ชื่อ–นามสกุล</th><th>รหัสพนักงาน</th><th>ตำแหน่ง</th><th>คะแนน</th><th>เวลา</th><th>วันที่ส่ง</th></tr></thead><tbody>${rows.map((row, index) => `<tr><td class="rank">${index + 1}</td><td>${escapeHtml(row.full_name)}</td><td>${escapeHtml(row.employee_id)}</td><td>${escapeHtml(row.job_position)}</td><td><span class="score-pill">${row.score}/${row.max_score}</span></td><td>${formatDuration(row.duration_seconds)}</td><td>${new Date(row.submitted_at).toLocaleString("th-TH")}</td></tr>`).join("")}</tbody></table></div>`;
   } catch (error) { target.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`; }
 }
 
