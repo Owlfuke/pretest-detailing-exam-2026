@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102a43" />
+    <meta name="description" content="แบบทดสอบความรู้หน้างาน Engineer 2026 พร้อมจับเวลา เฉลย และ Score Board" />
+    <title>RC Detailing Exam 2026</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="site-header">
+        <a class="brand" href="#home" aria-label="RC Detailing Exam หน้าแรก">
+          <span class="brand-mark">RC</span>
+          <span><strong>DETAILING</strong><small>FIELD EXAM 2026</small></span>
+        </a>
+        <nav aria-label="เมนูหลัก">
+          <button class="nav-link" data-route="home">ภาพรวม</button>
+          <button class="nav-link" data-route="leaderboard">Score Board</button>
+        </nav>
+        <div class="header-actions">
+          <span id="user-chip" class="user-chip hidden"></span>
+          <button id="auth-button" class="button button-small">ลงชื่อเข้าใช้</button>
+        </div>
+      </header>
+
+      <main id="app" tabindex="-1"></main>
+
+      <footer>
+        <span>RC Detailing Field Exam</span>
+        <span>คะแนนวัดความเข้าใจ ไม่ทดแทนการตรวจสอบโดยวิศวกรผู้รับผิดชอบ</span>
+      </footer>
+    </div>
+
+    <dialog id="auth-dialog" class="auth-dialog">
+      <form method="dialog" class="dialog-close-row"><button aria-label="ปิด">×</button></form>
+      <div class="auth-copy">
+        <p class="eyebrow">SECURE ACCESS</p>
+        <h2>ลงชื่อก่อนเริ่มทำข้อสอบ</h2>
+        <p>เวลาเริ่มและเวลาส่งจะบันทึกจากระบบ ผู้เข้าสอบหนึ่งคนส่งคำตอบได้หนึ่งครั้ง</p>
+      </div>
+      <div class="auth-tabs" role="tablist">
+        <button id="tab-login" class="active" type="button">เข้าสู่ระบบ</button>
+        <button id="tab-signup" type="button">สร้างบัญชี</button>
+      </div>
+      <form id="auth-form" class="form-stack">
+        <div id="signup-fields" class="form-stack hidden">
+          <label>ชื่อ–นามสกุล<input name="full_name" autocomplete="name" /></label>
+          <div class="field-grid two">
+            <label>รหัสพนักงาน<input name="employee_id" autocomplete="off" /></label>
+            <label>ตำแหน่ง<select name="position"><option value="Engineer">Engineer</option><option value="Foreman">Foreman</option><option value="Other">อื่น ๆ</option></select></label>
+          </div>
+        </div>
+        <label>อีเมล<input name="email" type="email" autocomplete="email" required /></label>
+        <label>รหัสผ่าน<input name="password" type="password" minlength="8" autocomplete="current-password" required /></label>
+        <p id="auth-message" class="form-message" aria-live="polite"></p>
+        <button class="button button-primary" type="submit">ดำเนินการต่อ</button>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
