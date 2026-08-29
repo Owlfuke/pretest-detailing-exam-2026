@@ -127,6 +127,9 @@ th { color: white; background: var(--navy); font-size: 13px; }
 tbody tr:nth-child(1) { background: #fff9df; }
 .rank { font: 700 18px Arial, sans-serif; color: var(--navy); }
 .score-pill { display: inline-block; min-width: 72px; padding: 5px 10px; text-align: center; border-radius: 30px; color: white; background: var(--teal); font-weight: 700; }
+.status-pill { display: inline-block; min-width: 76px; padding: 5px 10px; text-align: center; border-radius: 30px; color: white; font-weight: 800; }
+.status-pill.pass { background: var(--green); }
+.status-pill.fail { background: var(--red); }
 .empty-state { padding: 60px 24px; text-align: center; color: var(--muted); background: white; border: 1px dashed #b8c5d1; }
 
 .resource-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -137,8 +140,11 @@ tbody tr:nth-child(1) { background: #fff9df; }
 
 .result-hero { padding: 52px 0; color: white; background: var(--navy); }
 .result-summary { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 30px; }
+.result-score-panel { display: grid; justify-items: end; gap: 8px; }
 .result-score { color: var(--yellow); font: 700 clamp(54px, 9vw, 100px) Arial, sans-serif; line-height: .9; }
 .result-score small { color: #c8d4df; font-size: .28em; }
+.result-percent { color: white; font: 700 28px Arial, sans-serif; }
+.result-score-panel > small { color: #c8d4df; }
 .result-list { display: grid; gap: 14px; padding: 38px 0 90px; }
 .post-exam-resources { padding: 48px 0 10px; }
 .post-exam-resources .section-title { margin-bottom: 22px; }
@@ -196,6 +202,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding: 25px
   .hero-card { box-shadow: 10px 10px 0 var(--yellow); }
   .section { padding: 58px 0; }
   .section-title, .result-summary { display: block; }
+  .result-score-panel { justify-items: start; margin-top: 28px; }
   .section-title p { margin-top: 16px; }
   .field-grid.two, .field-grid.three { grid-template-columns: 1fr; }
   .exam-toolbar { top: 68px; }

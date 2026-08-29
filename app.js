@@ -5,6 +5,7 @@ const authForm = document.querySelector("#auth-form");
 const authButton = document.querySelector("#auth-button");
 const userChip = document.querySelector("#user-chip");
 const toast = document.querySelector("#toast");
+const PASS_PERCENT = 85;
 
 const state = {
   route: "home",
@@ -178,6 +179,23 @@ function formatDuration(totalSeconds = 0) {
   return hours ? `${hours}:${String(minutes).padStart(2,"0")}:${String(remaining).padStart(2,"0")}` : `${minutes}:${String(remaining).padStart(2,"0")}`;
 }
 
+function scorePercentage(score, maxScore) {
+  const earned = Number(score);
+  const maximum = Number(maxScore);
+  return Number.isFinite(earned) && Number.isFinite(maximum) && maximum > 0
+    ? (earned / maximum) * 100
+    : 0;
+}
+
+function formatPercentage(score, maxScore) {
+  const percentage = scorePercentage(score, maxScore);
+  return `${percentage.toFixed(2).replace(/\.?0+$/, "")}%`;
+}
+
+function passedExam(score, maxScore) {
+  return scorePercentage(score, maxScore) >= PASS_PERCENT;
+}
+
 function userName() {
   return state.session?.user?.user_metadata?.full_name || "ผู้เข้าสอบ";
 }
@@ -218,6 +236,7 @@ function renderHome() {
         <div class="stat-list">
           <div class="stat"><span>หัวข้อหลัก</span><strong>10</strong></div>
           <div class="stat"><span>คะแนนเต็ม</span><strong>30</strong></div>
+          <div class="stat"><span>เกณฑ์ผ่าน</span><strong>${PASS_PERCENT}%</strong></div>
           <div class="stat"><span>รูปประกอบจากโจทย์</span><strong>8</strong></div>
           <div class="stat"><span>จำนวนครั้งที่ส่งได้</span><strong>1</strong></div>
         </div>
@@ -405,6 +424,8 @@ function renderResults() {
   if (!state.result) return go("home");
   const result = state.result;
   const recovered = Boolean(result.recovered);
+  const percentage = formatPercentage(result.score, result.max_score);
+  const passed = passedExam(result.score, result.max_score);
   const resultTitle = recovered ? "ผลสอบย้อนหลัง" : "ส่งคำตอบเรียบร้อย";
   const resultSummary = recovered
     ? `ส่งเมื่อ ${new Date(result.submitted_at).toLocaleString("th-TH")} · ใช้เวลา ${formatDuration(result.duration_seconds)}`
@@ -417,13 +438,13 @@ function renderResults() {
     </a>`).join("");
   const detailCards = (result.details || []).map((item) => `
     <article class="result-card ${item.status || (item.awarded === item.points ? "correct" : "incorrect")}">
-      <div class="result-meta"><h3>${escapeHtml(item.label)}</h3><strong>${item.awarded}/${item.points} คะแนน</strong></div>
+      <div class="result-meta"><h3>${escapeHtml(item.label)}</h3><strong>${item.awarded}/${item.points} คะแนน · ${formatPercentage(item.awarded, item.points)}</strong></div>
       <p><strong>คำตอบของคุณ:</strong> ${escapeHtml(item.user_answer || "—")}</p>
       <div class="answer-box"><strong>คำตอบและเหตุผล</strong><p>${escapeHtml(item.explanation)}</p></div>
       <p class="reference"><strong>อ้างอิง:</strong> ${escapeHtml(item.reference)}</p>
     </article>`).join("");
   app.innerHTML = `
-    <section class="result-hero"><div class="container result-summary"><div><p class="eyebrow">${recovered ? "PREVIOUS RESULT" : "SUBMITTED"}</p><h1>${resultTitle}</h1><p>${resultSummary}</p></div><div class="result-score">${result.score}<small> / ${result.max_score}</small></div></div></section>
+    <section class="result-hero"><div class="container result-summary"><div><p class="eyebrow">${recovered ? "PREVIOUS RESULT" : "SUBMITTED"}</p><h1>${resultTitle}</h1><p>${resultSummary}</p></div><div class="result-score-panel"><div class="result-score">${result.score}<small> / ${result.max_score}</small></div><div class="result-percent">${percentage}</div><span class="status-pill ${passed ? "pass" : "fail"}">${passed ? "ผ่าน" : "ไม่ผ่าน"}</span><small>เกณฑ์ผ่าน ${PASS_PERCENT}%</small></div></div></section>
     <section class="container">
       ${result.demo ? '<div class="notice"><strong>โหมดสาธิต:</strong> ยังไม่ตรวจคะแนนจริง กรุณาติดตั้งฐานข้อมูลตาม README แล้วปิด demoMode</div>' : ''}
       ${postExamResources ? `<section class="post-exam-resources"><p class="eyebrow">UNLOCKED AFTER SUBMISSION</p><div class="section-title"><h2>เอกสารและวิดีโอหลังสอบ</h2><p>ลิงก์ส่วนนี้ปลดล็อกหลังส่งคำตอบสำเร็จและไม่ถูกส่งมายัง browser ก่อนสอบเสร็จ</p></div><div class="lecture-grid">${postExamResources}</div></section>` : ''}
@@ -432,7 +453,7 @@ function renderResults() {
 }
 
 async function renderLeaderboard() {
-  app.innerHTML = `<section class="page-head"><div class="container"><p class="eyebrow">RANKING / VERIFIED TIME</p><h1>Score Board</h1><p>เรียงคะแนนจากมากไปน้อย และใช้เวลาน้อยกว่าเป็นลำดับถัดไปเมื่อคะแนนเท่ากัน</p></div></section><section class="section"><div class="container" id="leaderboard-content"><div class="empty-state">กำลังโหลดผลคะแนน…</div></div></section>`;
+  app.innerHTML = `<section class="page-head"><div class="container"><p class="eyebrow">RANKING / VERIFIED TIME</p><h1>Score Board</h1><p>เกณฑ์ผ่าน ${PASS_PERCENT}% · เรียงคะแนนจากมากไปน้อย และใช้เวลาน้อยกว่าเป็นลำดับถัดไปเมื่อคะแนนเท่ากัน</p></div></section><section class="section"><div class="container" id="leaderboard-content"><div class="empty-state">กำลังโหลดผลคะแนน…</div></div></section>`;
   const target = document.querySelector("#leaderboard-content");
   if (config.demoMode) { target.innerHTML = '<div class="empty-state"><h2>ยังไม่มีคะแนนจริง</h2><p>Score Board จะเริ่มทำงานเมื่อเชื่อม Supabase และปิดโหมดสาธิต</p></div>'; return; }
   if (!state.session?.user) {
@@ -443,7 +464,7 @@ async function renderLeaderboard() {
   try {
     const rows = await api.rpc("get_leaderboard", { p_exam_version: config.examVersion });
     if (!rows?.length) { target.innerHTML = '<div class="empty-state">ยังไม่มีผู้ส่งคำตอบ</div>'; return; }
-    target.innerHTML = `<div class="table-wrap"><table><thead><tr><th>อันดับ</th><th>ชื่อ–นามสกุล</th><th>คะแนน</th><th>เวลา</th><th>วันที่ส่ง</th></tr></thead><tbody>${rows.map((row, index) => `<tr><td class="rank">${index + 1}</td><td>${escapeHtml(row.full_name)}</td><td><span class="score-pill">${row.score}/${row.max_score}</span></td><td>${formatDuration(row.duration_seconds)}</td><td>${new Date(row.submitted_at).toLocaleString("th-TH")}</td></tr>`).join("")}</tbody></table></div>`;
+    target.innerHTML = `<div class="table-wrap"><table><thead><tr><th>อันดับ</th><th>ชื่อ–นามสกุล</th><th>คะแนน</th><th>เปอร์เซ็นต์</th><th>สถานะ</th><th>เวลา</th><th>วันที่ส่ง</th></tr></thead><tbody>${rows.map((row, index) => { const passed = passedExam(row.score, row.max_score); return `<tr><td class="rank">${index + 1}</td><td>${escapeHtml(row.full_name)}</td><td><span class="score-pill">${row.score}/${row.max_score}</span></td><td><strong>${formatPercentage(row.score, row.max_score)}</strong></td><td><span class="status-pill ${passed ? "pass" : "fail"}">${passed ? "ผ่าน" : "ไม่ผ่าน"}</span></td><td>${formatDuration(row.duration_seconds)}</td><td>${new Date(row.submitted_at).toLocaleString("th-TH")}</td></tr>`; }).join("")}</tbody></table></div>`;
   } catch (error) { target.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`; }
 }
 
