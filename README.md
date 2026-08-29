@@ -6,13 +6,13 @@
 
 - โจทย์ 10 ข้อ รวม 30 คะแนน มีช่องตัวเลข ข้อเขียน และตัวเลือก
 - รูปประกอบ 8 รูป ครอปจากข้อสอบต้นฉบับให้ตรงกับโจทย์
-- ระบบสมัคร/เข้าสู่ระบบด้วย Supabase Auth
+- กรอกเฉพาะชื่อ–นามสกุล โดยใช้ Supabase Anonymous Sign-in ไม่ต้องใช้อีเมลหรือรหัสผ่าน
 - เวลาเริ่มและเวลาส่งบันทึกในฐานข้อมูล ป้องกันการแก้เวลาจากหน้าเว็บ
 - ตรวจคะแนนใน PostgreSQL function จึงไม่ส่งเฉลยไปที่ browser ก่อนกดส่ง
 - จำกัดหนึ่งบัญชีต่อหนึ่ง attempt ต่อเวอร์ชันข้อสอบ
 - Score Board เรียงคะแนนมากก่อน และเวลาน้อยก่อนเมื่อคะแนนเท่ากัน
 - เฉลยหลังส่งพร้อมหน้าเอกสารและมาตรฐานอ้างอิง
-- ปลดล็อกเอกสาร SharePoint และวิดีโอ Lecture 2 รายการหลังส่งคำตอบสำเร็จเท่านั้น โดย URL ทั้งหมดอยู่ฝั่งฐานข้อมูล
+- ปลดล็อกเอกสาร Google Drive และวิดีโอ Lecture 2 รายการหลังส่งคำตอบสำเร็จเท่านั้น โดย URL ทั้งหมดอยู่ฝั่งฐานข้อมูล
 - Responsive รองรับโทรศัพท์ แท็บเล็ต และคอมพิวเตอร์
 
 ## ข้อเท็จจริงที่ต้องรู้ก่อนใช้จริง
@@ -20,9 +20,9 @@
 1. GitHub Pages อย่างเดียวไม่เพียงพอสำหรับระบบคะแนนที่เชื่อถือได้ จึงต้องใช้ Supabase เป็น backend
 2. repository ควรตั้งเป็น **Private** เพราะ `supabase/schema.sql` มี answer key หากเปิด source สาธารณะ ผู้เข้าสอบสามารถอ่านคำตอบได้
 3. ห้ามอัปโหลด PDF/วิดีโอภายในบริษัทไป public repository โดยไม่ได้รับอนุญาต ชุดนี้ใส่เฉพาะภาพจากข้อสอบที่จำเป็นต่อการทำข้อสอบ
-4. ลิงก์ SharePoint ต้องทดสอบด้วยบัญชีผู้เข้าสอบจริง เพื่อยืนยันว่าทุกคนมีสิทธิ์ Viewer ก่อนเปิดสอบ
-5. SharePoint และวิดีโอ YouTube หลังสอบเก็บไว้ใน database function เท่านั้น ห้ามย้าย URL ไปไว้ใน `config.js` หรือ `app.js` มิฉะนั้นผู้สอบสามารถอ่าน source ก่อนส่งคำตอบได้
-6. คำตอบข้อ 1 และข้อ 4 เป็นการตีความจากแบบ/สไลด์ ผู้บรรยายหรือวิศวกรผู้ออกข้อสอบควรลงนามรับรองตาม `ANSWER-KEY-REVIEW.md` ก่อนเปิดสอบจริง
+4. ลิงก์ Google Drive ต้องตั้งสิทธิ์ Viewer ให้กลุ่มผู้สอบเปิดได้ และควรทดสอบในหน้าต่างไม่ระบุตัวตนก่อนเปิดสอบ
+5. Google Drive และวิดีโอ YouTube หลังสอบเก็บไว้ใน database function เท่านั้น ห้ามย้าย URL ไปไว้ใน `config.js` หรือ `app.js` มิฉะนั้นผู้สอบสามารถอ่าน source ก่อนส่งคำตอบได้
+6. ผู้ออกข้อสอบรับรองคำตอบข้อ 1, 4, 7.2 และ 9 เมื่อวันที่ 29 สิงหาคม 2026 ตาม `ANSWER-KEY-REVIEW.md`
 
 ## ทดลองหน้าเว็บในเครื่อง
 
@@ -38,29 +38,36 @@ python -m http.server 8080
 
 1. สร้าง Supabase project ใหม่
 2. เปิด SQL Editor และรันไฟล์ `supabase/schema.sql` ทั้งไฟล์
-3. ใน Authentication > URL Configuration ใส่ URL เว็บไซต์จริงใน Site URL และ Redirect URLs
-4. คัดลอก Project URL และ Publishable key (`sb_publishable_...`) จาก Connect หรือ Settings > API Keys
-5. แก้ `config.js` เมื่อต้องการย้ายไปใช้ Supabase project อื่น:
+3. ใน Authentication > Sign In / Providers เปิด **Allow anonymous sign-ins**
+4. แนะนำให้เปิด Cloudflare Turnstile/CAPTCHA ก่อนเผยแพร่สู่สาธารณะ เพื่อลดการสร้างบัญชีชั่วคราวอัตโนมัติ
+5. คัดลอก Project URL และ Publishable key (`sb_publishable_...`) จาก Connect หรือ Settings > API Keys
+6. แก้ `config.js` เมื่อต้องการย้ายไปใช้ Supabase project อื่น:
 
 ```js
 window.APP_CONFIG = {
   supabaseUrl: "https://PROJECT.supabase.co",
   supabaseKey: "sb_publishable_...",
   demoMode: false,
-  examVersion: "test-01-2026-v1",
+  examVersion: "test-01-2026-v2",
   resources: [],
 };
 ```
 
 Publishable key เป็นคีย์สำหรับ browser และเปิดเผยในหน้าเว็บได้ตามการออกแบบของ Supabase ความปลอดภัยอยู่ที่ RLS และสิทธิ์ของ database function ห้ามใส่ Secret key หรือ service-role key ในไฟล์นี้เด็ดขาด
 
-ลิงก์ SharePoint และวิดีโอหลังสอบอยู่ใน `public.post_exam_resources()` ภายใน `supabase/schema.sql` ระบบจะเรียก function นี้เมื่อ attempt มีสถานะ `submitted` เท่านั้น
+ลิงก์ Google Drive และวิดีโอหลังสอบอยู่ใน `public.post_exam_resources()` ภายใน `supabase/schema.sql` ระบบจะเรียก function นี้เมื่อ attempt มีสถานะ `submitted` เท่านั้น
 
-## นำขึ้น GitHub
+## นำขึ้น Cloudflare Pages จาก Private GitHub repository
 
-สร้าง private repository แล้วเปิด GitHub Pages โดยเลือก Source เป็น **GitHub Actions** workflow ที่ให้มา ระบบจะเผยแพร่เฉพาะไฟล์หน้าเว็บ ไม่เผยแพร่ `supabase/schema.sql`, README หรือ answer key ค่า Project URL และ Publishable key อยู่ใน `config.example.js` เพราะเป็นค่าที่ออกแบบให้เปิดเผยใน browser ได้
+เชื่อม Private repository กับ Cloudflare Pages แล้วตั้งค่า:
 
-ห้ามเลือก Deploy from branch/root เพราะอาจทำให้ไฟล์ SQL และ answer key ถูกเสิร์ฟเป็นไฟล์เว็บไซต์ ให้ใช้ `.github/workflows/deploy-pages.yml` เท่านั้น แม้ URL และ anon key จะเป็นค่าฝั่ง client ที่เปิดเผยได้ แต่ answer key และ URL วิดีโอหลังสอบต้องไม่อยู่ใน deployment artifact
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Production branch: `main`
+
+คำสั่ง build จะคัดลอกเฉพาะหน้าเว็บและรูปข้อสอบไปยัง `dist` และหยุดทันทีหากตรวจพบ URL เอกสาร/วิดีโอหลังสอบ จึงไม่เผยแพร่ `supabase/schema.sql`, README หรือ answer key
+
+ห้ามตั้ง Build output directory เป็น `/` หรือ root repository เพราะจะทำให้ไฟล์ SQL และ answer key ถูกเสิร์ฟเป็นไฟล์เว็บไซต์ ต้องใช้ `dist` เท่านั้น
 
 ## การเปลี่ยนข้อสอบ
 
@@ -71,4 +78,4 @@ Publishable key เป็นคีย์สำหรับ browser และเ�
 
 ## การดูแลข้อมูลส่วนบุคคล
 
-ระบบเก็บชื่อ รหัสพนักงาน ตำแหน่ง อีเมล เวลา และผลคะแนน ควรกำหนดผู้ควบคุมข้อมูล ระยะเวลาเก็บ การเข้าถึง และช่องทางให้พนักงานขอแก้ไข/ลบข้อมูลตามนโยบายบริษัทและกฎหมายที่ใช้บังคับ
+ระบบเก็บชื่อ เวลา และผลคะแนน รวมถึงบัญชี Anonymous ภายใน Supabase ควรกำหนดระยะเวลาเก็บและลบบัญชีชั่วคราวที่หมดอายุเป็นระยะ ผู้สอบจะกลับเข้าบัญชีเดิมไม่ได้หากล้างข้อมูล browser เปลี่ยนอุปกรณ์ หรือกดเปลี่ยนผู้สอบ

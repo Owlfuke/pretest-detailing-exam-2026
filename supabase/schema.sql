@@ -26,29 +26,33 @@ create table if not exists public.exam_attempts (
   unique (user_id, exam_version)
 );
 
+create index if not exists exam_attempts_leaderboard_idx
+  on public.exam_attempts (exam_version, score desc, duration_seconds asc, submitted_at asc)
+  where status = 'submitted';
+
 alter table public.profiles enable row level security;
 alter table public.exam_attempts enable row level security;
 
 drop policy if exists "read own profile" on public.profiles;
 create policy "read own profile" on public.profiles
-  for select to authenticated using (id = auth.uid());
+  for select to authenticated using (id = (select auth.uid()));
 
 drop policy if exists "read own attempts" on public.exam_attempts;
 create policy "read own attempts" on public.exam_attempts
-  for select to authenticated using (user_id = auth.uid());
+  for select to authenticated using (user_id = (select auth.uid()));
 
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
-security definer set search_path = public
+security definer set search_path = ''
 as $$
 begin
   insert into public.profiles (id, full_name, employee_id, position)
   values (
     new.id,
     trim(coalesce(new.raw_user_meta_data->>'full_name', '')),
-    upper(trim(coalesce(new.raw_user_meta_data->>'employee_id', ''))),
-    coalesce(new.raw_user_meta_data->>'position', 'Other')
+    coalesce(nullif(upper(trim(new.raw_user_meta_data->>'employee_id')), ''), 'G-' || new.id::text),
+    coalesce(nullif(new.raw_user_meta_data->>'position', ''), 'Other')
   );
   return new;
 end;
@@ -59,10 +63,13 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+
 create or replace function public.safe_numeric(value text)
 returns numeric
 language plpgsql
 immutable
+set search_path = ''
 as $$
 begin
   return value::numeric;
@@ -78,9 +85,10 @@ create or replace function public.post_exam_resources()
 returns jsonb
 language sql
 immutable
+set search_path = ''
 as $$
   select jsonb_build_array(
-    jsonb_build_object('label','เอกสารประกอบการอบรม Reinforced Concrete Detailing','url','https://rittacoth-my.sharepoint.com/:b:/g/personal/kitsanapong_ritta_co_th/IQCU0J6nUw-uT78aKb2SF_McAQcGTGiciYkRmYmVgy3mSfI?e=Anw3EL'),
+    jsonb_build_object('label','เอกสารประกอบการอบรม Reinforced Concrete Detailing','url','https://drive.google.com/file/d/1wQbffeHzphCPCz1ULruFByYP9u8H7yfb/view?usp=sharing'),
     jsonb_build_object('label','Lecture Reinforced Concrete Detailing — Part 1','url','https://youtu.be/MrbwCVn2XJE'),
     jsonb_build_object('label','Lecture Reinforced Concrete Detailing — Part 2','url','https://youtu.be/-KvpzvD8Zko')
   );
@@ -92,7 +100,7 @@ create or replace function public.start_exam(p_exam_version text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
@@ -132,7 +140,7 @@ create or replace function public.submit_exam(p_attempt_id uuid, p_answers jsonb
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_attempt public.exam_attempts;
@@ -172,14 +180,14 @@ begin
   if abs(public.safe_numeric(p_answers->>'q1_x') - (-0.34)) <= 0.01 then v_award := v_award + 1; end if;
   if abs(public.safe_numeric(p_answers->>'q1_y') - (-2.10)) <= 0.01 then v_award := v_award + 1; end if;
   if p_answers->>'q1_pass' = 'pass' then v_award := v_award + 1; end if;
-  if p_answers->>'q1_expand' = 'yes' then v_award := v_award + 1; end if;
+  if p_answers->>'q1_expand' = 'no' then v_award := v_award + 1; end if;
   v_score := v_score + v_award;
   v_details := v_details || jsonb_build_array(jsonb_build_object(
     'label','ข้อ 1 — Pile eccentricity','awarded',v_award,'points',4,
     'status',case when v_award=4 then 'correct' when v_award=0 then 'incorrect' else 'partial' end,
     'user_answer',concat('X=',p_answers->>'q1_x',', Y=',p_answers->>'q1_y',', ',p_answers->>'q1_pass',', expand=',p_answers->>'q1_expand'),
-    'explanation','X=(5.3−0.5−1.1−6.1+0.7)/5 = −0.34 ซม.; Y=(−1.3+5.6−0.6−6.3−7.9)/5 = −2.10 ซม. ค่าเฉลี่ยทั้งสองแกนไม่เกิน 7.5 ซม. จึงผ่านเกณฑ์ eccentricity แต่เข็ม 145 เคลื่อนออกด้าน Y = 7.9 ซม. เกิน Allow Pile Deviate 7.5 ซม. จึงต้องให้ผู้ออกแบบตรวจและขยายฐานด้านที่ระยะขอบไม่พอ',
-    'reference','TEST-01 หน้า 1; Detailing 2026 หน้า 130–138 (Pile Eccentricity และกรณีต้องขยายฐาน)'
+    'explanation','X=(5.3−0.5−1.1−6.1+0.7)/5 = −0.34 ซม.; Y=(−1.3+5.6−0.6−6.3−7.9)/5 = −2.10 ซม. ระยะเยื้องศูนย์ลัพธ์ = √(X²+Y²) = √(0.34²+2.10²) = 2.127 ซม. หรือประมาณ 2.13 ซม. ซึ่งไม่เกินเกณฑ์ 7.5 ซม. จึงผ่านและไม่ต้องขยายฐานรากตามคำรับรองของผู้ออกข้อสอบ',
+    'reference','TEST-01 หน้า 1; Detailing 2026 หน้า 130–138 (Pile Eccentricity); คำรับรองผู้ออกข้อสอบ 29 ส.ค. 2026'
   ));
 
   -- Q2: 6 points
@@ -310,18 +318,18 @@ $$;
 drop function if exists public.get_leaderboard(text);
 create function public.get_leaderboard(p_exam_version text)
 returns table (
-  full_name text, employee_id text, job_position text,
-  score numeric, max_score numeric, duration_seconds integer, submitted_at timestamptz
+  full_name text, score numeric, max_score numeric,
+  duration_seconds integer, submitted_at timestamptz
 )
 language sql
 security definer
-set search_path = public
+set search_path = ''
 as $$
-  select p.full_name, p.employee_id, p.position as job_position,
-         a.score, a.max_score, a.duration_seconds, a.submitted_at
+  select p.full_name, a.score, a.max_score, a.duration_seconds, a.submitted_at
   from public.exam_attempts a
   join public.profiles p on p.id = a.user_id
-  where a.exam_version = p_exam_version and a.status = 'submitted'
+  where (select auth.uid()) is not null
+    and a.exam_version = p_exam_version and a.status = 'submitted'
   order by a.score desc, a.duration_seconds asc, a.submitted_at asc
   limit 100;
 $$;

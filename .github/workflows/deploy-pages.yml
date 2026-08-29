@@ -1,39 +1,19 @@
-name: Deploy exam frontend to GitHub Pages
+name: Verify Cloudflare Pages artifact
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build public artifact
-        run: |
-          mkdir -p dist
-          cp index.html app.js styles.css dist/
-          cp config.example.js dist/config.js
-          cp -R assets dist/assets
-          if grep -R -E "rittacoth-my\.sharepoint\.com|IQCU0J6nUw-uT78aKb2SF|MrbwCVn2XJE|KvpzvD8Zko" dist; then
-            echo "Post-exam resource URL leaked into frontend artifact"
-            exit 1
-          fi
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/setup-node@v4
         with:
-          path: dist
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          node-version: 22
+      - run: npm run build

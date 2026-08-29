@@ -8,7 +8,6 @@ const toast = document.querySelector("#toast");
 
 const state = {
   route: "home",
-  authMode: "login",
   session: JSON.parse(localStorage.getItem("rc-session") || "null"),
   attempt: JSON.parse(sessionStorage.getItem("rc-attempt") || "null"),
   timerHandle: null,
@@ -157,8 +156,7 @@ const api = {
     state.session = data;
     localStorage.setItem("rc-session", JSON.stringify(data));
   },
-  signIn(email, password) { return this.request("/auth/v1/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }), auth: false }); },
-  signUp(payload) { return this.request("/auth/v1/signup", { method: "POST", body: JSON.stringify(payload), auth: false }); },
+  signInAnonymously(fullName) { return this.request("/auth/v1/signup", { method: "POST", body: JSON.stringify({ data: { full_name: fullName } }), auth: false }); },
   rpc(name, body = {}) { return this.request(`/rest/v1/rpc/${name}`, { method: "POST", body: JSON.stringify(body) }); },
 };
 
@@ -181,14 +179,14 @@ function formatDuration(totalSeconds = 0) {
 }
 
 function userName() {
-  return state.session?.user?.user_metadata?.full_name || state.session?.user?.email || "ผู้เข้าสอบ";
+  return state.session?.user?.user_metadata?.full_name || "ผู้เข้าสอบ";
 }
 
 function updateHeader() {
   const signedIn = Boolean(state.session?.user);
   userChip.classList.toggle("hidden", !signedIn);
   userChip.textContent = signedIn ? userName() : "";
-  authButton.textContent = signedIn ? "ออกจากระบบ" : "ลงชื่อเข้าใช้";
+  authButton.textContent = signedIn ? "เปลี่ยนผู้สอบ" : "กรอกชื่อ";
   document.querySelectorAll(".nav-link").forEach((button) => button.classList.toggle("active", button.dataset.route === state.route));
 }
 
@@ -227,7 +225,7 @@ function renderHome() {
     <section class="section"><div class="container">
       <div class="section-title"><h2>วิธีทำข้อสอบ</h2><p>คำตอบจะยังไม่ถูกตรวจระหว่างทำ ต้องตอบให้ครบและกดส่งครั้งเดียว จากนั้นระบบจึงแสดงคะแนนและเฉลยทั้งหมด</p></div>
       <div class="feature-grid">
-        <article class="feature-card"><span class="feature-index">01 / SIGN IN</span><h3>ยืนยันผู้เข้าสอบ</h3><p>ใช้ชื่อ รหัสพนักงาน ตำแหน่ง อีเมล และรหัสผ่านเพื่อแยกผลคะแนนแต่ละคน</p></article>
+        <article class="feature-card"><span class="feature-index">01 / NAME</span><h3>กรอกชื่อผู้เข้าสอบ</h3><p>ใช้เพียงชื่อ–นามสกุล ไม่ต้องใช้อีเมลหรือรหัสผ่าน ระบบจะแยกผลคะแนนด้วยบัญชีชั่วคราวของอุปกรณ์นี้</p></article>
         <article class="feature-card"><span class="feature-index">02 / COMPLETE</span><h3>ทำให้ครบก่อนส่ง</h3><p>มีทั้งช่องตัวเลข ข้อเขียน และตัวเลือก ระบบบันทึกเวลาเริ่มจากฝั่งเซิร์ฟเวอร์</p></article>
         <article class="feature-card"><span class="feature-index">03 / REVIEW</span><h3>เฉลยพร้อมหลักฐาน</h3><p>ดูวิธีคิด หน้าเอกสารอ้างอิง และข้อกำหนดมาตรฐานหลังส่งคำตอบแล้วเท่านั้น</p></article>
       </div>
@@ -399,10 +397,15 @@ async function renderLeaderboard() {
   app.innerHTML = `<section class="page-head"><div class="container"><p class="eyebrow">RANKING / VERIFIED TIME</p><h1>Score Board</h1><p>เรียงคะแนนจากมากไปน้อย และใช้เวลาน้อยกว่าเป็นลำดับถัดไปเมื่อคะแนนเท่ากัน</p></div></section><section class="section"><div class="container" id="leaderboard-content"><div class="empty-state">กำลังโหลดผลคะแนน…</div></div></section>`;
   const target = document.querySelector("#leaderboard-content");
   if (config.demoMode) { target.innerHTML = '<div class="empty-state"><h2>ยังไม่มีคะแนนจริง</h2><p>Score Board จะเริ่มทำงานเมื่อเชื่อม Supabase และปิดโหมดสาธิต</p></div>'; return; }
+  if (!state.session?.user) {
+    target.innerHTML = '<div class="empty-state"><h2>กรอกชื่อก่อนดู Score Board</h2><p>ระบบใช้ชื่อเพื่อแยกผู้เข้าสอบแต่ละคน</p><button class="button button-primary" id="leaderboard-signin">กรอกชื่อ</button></div>';
+    document.querySelector("#leaderboard-signin").addEventListener("click", openAuth);
+    return;
+  }
   try {
     const rows = await api.rpc("get_leaderboard", { p_exam_version: config.examVersion });
     if (!rows?.length) { target.innerHTML = '<div class="empty-state">ยังไม่มีผู้ส่งคำตอบ</div>'; return; }
-    target.innerHTML = `<div class="table-wrap"><table><thead><tr><th>อันดับ</th><th>ชื่อ–นามสกุล</th><th>รหัสพนักงาน</th><th>ตำแหน่ง</th><th>คะแนน</th><th>เวลา</th><th>วันที่ส่ง</th></tr></thead><tbody>${rows.map((row, index) => `<tr><td class="rank">${index + 1}</td><td>${escapeHtml(row.full_name)}</td><td>${escapeHtml(row.employee_id)}</td><td>${escapeHtml(row.job_position)}</td><td><span class="score-pill">${row.score}/${row.max_score}</span></td><td>${formatDuration(row.duration_seconds)}</td><td>${new Date(row.submitted_at).toLocaleString("th-TH")}</td></tr>`).join("")}</tbody></table></div>`;
+    target.innerHTML = `<div class="table-wrap"><table><thead><tr><th>อันดับ</th><th>ชื่อ–นามสกุล</th><th>คะแนน</th><th>เวลา</th><th>วันที่ส่ง</th></tr></thead><tbody>${rows.map((row, index) => `<tr><td class="rank">${index + 1}</td><td>${escapeHtml(row.full_name)}</td><td><span class="score-pill">${row.score}/${row.max_score}</span></td><td>${formatDuration(row.duration_seconds)}</td><td>${new Date(row.submitted_at).toLocaleString("th-TH")}</td></tr>`).join("")}</tbody></table></div>`;
   } catch (error) { target.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`; }
 }
 
@@ -413,17 +416,6 @@ function renderResources() {
 
 function openAuth() { authDialog.showModal(); }
 
-function setAuthMode(mode) {
-  state.authMode = mode;
-  document.querySelector("#tab-login").classList.toggle("active", mode === "login");
-  document.querySelector("#tab-signup").classList.toggle("active", mode === "signup");
-  document.querySelector("#signup-fields").classList.toggle("hidden", mode !== "signup");
-  authForm.elements.full_name.required = mode === "signup";
-  authForm.elements.employee_id.required = mode === "signup";
-  authForm.elements.password.autocomplete = mode === "signup" ? "new-password" : "current-password";
-  document.querySelector("#auth-message").textContent = "";
-}
-
 async function handleAuth(event) {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(authForm).entries());
@@ -433,13 +425,12 @@ async function handleAuth(event) {
   button.disabled = true;
   try {
     if (config.demoMode) {
-      state.session = { access_token: "demo", user: { id: crypto.randomUUID(), email: data.email, user_metadata: { full_name: data.full_name || data.email, employee_id: data.employee_id || "DEMO", position: data.position || "Engineer" } } };
-    } else if (state.authMode === "signup") {
-      state.session = await api.signUp({ email: data.email, password: data.password, data: { full_name: data.full_name.trim(), employee_id: data.employee_id.trim(), position: data.position } });
-      if (!state.session.access_token) { message.textContent = "สร้างบัญชีแล้ว กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ"; return; }
-    } else state.session = await api.signIn(data.email, data.password);
+      state.session = { access_token: "demo", user: { id: crypto.randomUUID(), is_anonymous: true, user_metadata: { full_name: data.full_name.trim() } } };
+    } else {
+      state.session = await api.signInAnonymously(data.full_name.trim());
+    }
     localStorage.setItem("rc-session", JSON.stringify(state.session));
-    authDialog.close(); authForm.reset(); updateHeader(); showToast("ลงชื่อเข้าใช้เรียบร้อย");
+    authDialog.close(); authForm.reset(); updateHeader(); showToast(`ยินดีต้อนรับ ${userName()}`);
   } catch (error) { message.textContent = error.message; }
   finally { button.disabled = false; }
 }
@@ -464,12 +455,9 @@ function render() {
 }
 
 authButton.addEventListener("click", () => state.session?.user ? logout() : openAuth());
-document.querySelector("#tab-login").addEventListener("click", () => setAuthMode("login"));
-document.querySelector("#tab-signup").addEventListener("click", () => setAuthMode("signup"));
 authForm.addEventListener("submit", handleAuth);
 document.querySelectorAll("[data-route]").forEach((button) => button.addEventListener("click", () => go(button.dataset.route)));
 window.addEventListener("hashchange", () => { state.route = location.hash.slice(1) || "home"; render(); });
 
 state.route = location.hash.slice(1) || (state.result ? "results" : "home");
-setAuthMode("login");
 render();

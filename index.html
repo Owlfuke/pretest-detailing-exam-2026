@@ -22,7 +22,7 @@
         </nav>
         <div class="header-actions">
           <span id="user-chip" class="user-chip hidden"></span>
-          <button id="auth-button" class="button button-small">ลงชื่อเข้าใช้</button>
+          <button id="auth-button" class="button button-small">กรอกชื่อ</button>
         </div>
       </header>
 
@@ -37,26 +37,14 @@
     <dialog id="auth-dialog" class="auth-dialog">
       <form method="dialog" class="dialog-close-row"><button aria-label="ปิด">×</button></form>
       <div class="auth-copy">
-        <p class="eyebrow">SECURE ACCESS</p>
-        <h2>ลงชื่อก่อนเริ่มทำข้อสอบ</h2>
-        <p>เวลาเริ่มและเวลาส่งจะบันทึกจากระบบ ผู้เข้าสอบหนึ่งคนส่งคำตอบได้หนึ่งครั้ง</p>
-      </div>
-      <div class="auth-tabs" role="tablist">
-        <button id="tab-login" class="active" type="button">เข้าสู่ระบบ</button>
-        <button id="tab-signup" type="button">สร้างบัญชี</button>
+        <p class="eyebrow">EXAM ACCESS</p>
+        <h2>กรอกชื่อก่อนเริ่มทำข้อสอบ</h2>
+        <p>ไม่ต้องใช้อีเมลหรือรหัสผ่าน เวลาเริ่มและเวลาส่งจะบันทึกจากระบบในอุปกรณ์นี้</p>
       </div>
       <form id="auth-form" class="form-stack">
-        <div id="signup-fields" class="form-stack hidden">
-          <label>ชื่อ–นามสกุล<input name="full_name" autocomplete="name" /></label>
-          <div class="field-grid two">
-            <label>รหัสพนักงาน<input name="employee_id" autocomplete="off" /></label>
-            <label>ตำแหน่ง<select name="position"><option value="Engineer">Engineer</option><option value="Foreman">Foreman</option><option value="Other">อื่น ๆ</option></select></label>
-          </div>
-        </div>
-        <label>อีเมล<input name="email" type="email" autocomplete="email" required /></label>
-        <label>รหัสผ่าน<input name="password" type="password" minlength="8" autocomplete="current-password" required /></label>
+        <label>ชื่อ–นามสกุล<input name="full_name" minlength="2" maxlength="120" autocomplete="name" required autofocus /></label>
         <p id="auth-message" class="form-message" aria-live="polite"></p>
-        <button class="button button-primary" type="submit">ดำเนินการต่อ</button>
+        <button class="button button-primary" type="submit">เข้าสู่ระบบข้อสอบ</button>
       </form>
     </dialog>
 
