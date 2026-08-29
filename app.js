@@ -430,7 +430,7 @@ async function handleAuth(event) {
       state.session = await api.signInAnonymously(data.full_name.trim());
     }
     localStorage.setItem("rc-session", JSON.stringify(state.session));
-    authDialog.close(); authForm.reset(); updateHeader(); showToast(`ยินดีต้อนรับ ${userName()}`);
+    authDialog.close(); authForm.reset(); render(); showToast(`ยินดีต้อนรับ ${userName()}`);
   } catch (error) { message.textContent = error.message; }
   finally { button.disabled = false; }
 }
