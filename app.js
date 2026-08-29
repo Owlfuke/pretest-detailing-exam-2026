@@ -201,6 +201,7 @@ function go(route) {
 
 function renderHome() {
   const resume = state.attempt && !state.result;
+  const startLabel = state.result ? "ดูผลสอบย้อนหลัง" : (resume ? "ทำข้อสอบต่อ" : "เริ่มทำข้อสอบ");
   app.innerHTML = `
     <section class="hero"><div class="container hero-grid">
       <div class="hero-copy">
@@ -208,7 +209,7 @@ function renderHome() {
         <h1>แบบทดสอบ<br><span>RC DETAILING</span></h1>
         <p>ทดสอบการอ่านแบบ การควบคุมคอนกรีต เหล็กเสริม ฐานราก เสาเข็ม พื้นโพสต์เทนชั่น และความปลอดภัยงานค้ำยัน พร้อมเฉลยเชิงเหตุผลหลังส่งคำตอบ</p>
         <div class="hero-actions">
-          <button class="button button-primary" id="start-button">${resume ? "ทำข้อสอบต่อ" : "เริ่มทำข้อสอบ"}</button>
+          <button class="button button-primary" id="start-button">${startLabel}</button>
           <button class="button button-dark" data-go="leaderboard">ดู Score Board</button>
         </div>
       </div>
@@ -225,7 +226,7 @@ function renderHome() {
     <section class="section"><div class="container">
       <div class="section-title"><h2>วิธีทำข้อสอบ</h2><p>คำตอบจะยังไม่ถูกตรวจระหว่างทำ ต้องตอบให้ครบและกดส่งครั้งเดียว จากนั้นระบบจึงแสดงคะแนนและเฉลยทั้งหมด</p></div>
       <div class="feature-grid">
-        <article class="feature-card"><span class="feature-index">01 / NAME</span><h3>กรอกชื่อผู้เข้าสอบ</h3><p>ใช้เพียงชื่อ–นามสกุล ไม่ต้องใช้อีเมลหรือรหัสผ่าน ระบบจะแยกผลคะแนนด้วยบัญชีชั่วคราวของอุปกรณ์นี้</p></article>
+        <article class="feature-card"><span class="feature-index">01 / NAME</span><h3>กรอกชื่อผู้เข้าสอบ</h3><p>ใช้เพียงชื่อ–นามสกุล ไม่ต้องใช้อีเมลหรือรหัสผ่าน หากเคยส่งข้อสอบแล้ว ระบบจะเปิดผลและเอกสารหลังสอบย้อนหลังให้ทันที</p></article>
         <article class="feature-card"><span class="feature-index">02 / COMPLETE</span><h3>ทำให้ครบก่อนส่ง</h3><p>มีทั้งช่องตัวเลข ข้อเขียน และตัวเลือก ระบบบันทึกเวลาเริ่มจากฝั่งเซิร์ฟเวอร์</p></article>
         <article class="feature-card"><span class="feature-index">03 / REVIEW</span><h3>เฉลยพร้อมหลักฐาน</h3><p>ดูวิธีคิด หน้าเอกสารอ้างอิง และข้อกำหนดมาตรฐานหลังส่งคำตอบแล้วเท่านั้น</p></article>
       </div>
@@ -319,6 +320,7 @@ function updateTimer() {
 
 async function startExam() {
   if (!state.session?.user) { openAuth(); return; }
+  if (state.result && !state.result.demo) { go("results"); return; }
   try {
     if (!state.attempt) {
       state.attempt = config.demoMode
@@ -371,6 +373,11 @@ async function submitExam(event) {
 function renderResults() {
   if (!state.result) return go("home");
   const result = state.result;
+  const recovered = Boolean(result.recovered);
+  const resultTitle = recovered ? "ผลสอบย้อนหลัง" : "ส่งคำตอบเรียบร้อย";
+  const resultSummary = recovered
+    ? `ส่งเมื่อ ${new Date(result.submitted_at).toLocaleString("th-TH")} · ใช้เวลา ${formatDuration(result.duration_seconds)}`
+    : `ใช้เวลา ${formatDuration(result.duration_seconds)} · บันทึกผลแล้วและไม่สามารถแก้ไขคำตอบได้`;
   const postExamResources = (result.post_exam_resources || []).map((resource, index) => `
     <a class="lecture-card" href="${escapeHtml(resource.url)}" target="_blank" rel="noopener noreferrer">
       <span class="lecture-index">RESOURCE ${String(index + 1).padStart(2, "0")}</span>
@@ -385,7 +392,7 @@ function renderResults() {
       <p class="reference"><strong>อ้างอิง:</strong> ${escapeHtml(item.reference)}</p>
     </article>`).join("");
   app.innerHTML = `
-    <section class="result-hero"><div class="container result-summary"><div><p class="eyebrow">SUBMITTED</p><h1>ส่งคำตอบเรียบร้อย</h1><p>ใช้เวลา ${formatDuration(result.duration_seconds)} · บันทึกผลแล้วและไม่สามารถแก้ไขคำตอบได้</p></div><div class="result-score">${result.score}<small> / ${result.max_score}</small></div></div></section>
+    <section class="result-hero"><div class="container result-summary"><div><p class="eyebrow">${recovered ? "PREVIOUS RESULT" : "SUBMITTED"}</p><h1>${resultTitle}</h1><p>${resultSummary}</p></div><div class="result-score">${result.score}<small> / ${result.max_score}</small></div></div></section>
     <section class="container">
       ${result.demo ? '<div class="notice"><strong>โหมดสาธิต:</strong> ยังไม่ตรวจคะแนนจริง กรุณาติดตั้งฐานข้อมูลตาม README แล้วปิด demoMode</div>' : ''}
       ${postExamResources ? `<section class="post-exam-resources"><p class="eyebrow">UNLOCKED AFTER SUBMISSION</p><div class="section-title"><h2>เอกสารและวิดีโอหลังสอบ</h2><p>ลิงก์ส่วนนี้ปลดล็อกหลังส่งคำตอบสำเร็จและไม่ถูกส่งมายัง browser ก่อนสอบเสร็จ</p></div><div class="lecture-grid">${postExamResources}</div></section>` : ''}
@@ -424,12 +431,33 @@ async function handleAuth(event) {
   message.textContent = "";
   button.disabled = true;
   try {
+    const fullName = data.full_name.trim();
     if (config.demoMode) {
-      state.session = { access_token: "demo", user: { id: crypto.randomUUID(), is_anonymous: true, user_metadata: { full_name: data.full_name.trim() } } };
-    } else {
-      state.session = await api.signInAnonymously(data.full_name.trim());
+      state.session = { access_token: "demo", user: { id: crypto.randomUUID(), is_anonymous: true, user_metadata: { full_name: fullName } } };
+    } else if (!state.session?.user) {
+      state.session = await api.signInAnonymously(fullName);
     }
     localStorage.setItem("rc-session", JSON.stringify(state.session));
+
+    if (!config.demoMode) {
+      let previousResult = await api.rpc("get_previous_result_by_name", {
+        p_exam_version: config.examVersion,
+        p_full_name: userName(),
+      });
+      if (Array.isArray(previousResult)) previousResult = previousResult[0];
+      if (previousResult) {
+        state.result = previousResult;
+        state.attempt = null;
+        sessionStorage.setItem("rc-result", JSON.stringify(previousResult));
+        sessionStorage.removeItem("rc-attempt");
+        sessionStorage.removeItem("rc-draft");
+        authDialog.close(); authForm.reset();
+        showToast(`พบผลสอบเดิมของ ${userName()}`);
+        go("results");
+        return;
+      }
+    }
+
     authDialog.close(); authForm.reset(); render(); showToast(`ยินดีต้อนรับ ${userName()}`);
   } catch (error) { message.textContent = error.message; }
   finally { button.disabled = false; }

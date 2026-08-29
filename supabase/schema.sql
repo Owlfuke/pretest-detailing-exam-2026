@@ -30,6 +30,9 @@ create index if not exists exam_attempts_leaderboard_idx
   on public.exam_attempts (exam_version, score desc, duration_seconds asc, submitted_at asc)
   where status = 'submitted';
 
+create index if not exists profiles_normalized_name_idx
+  on public.profiles ((lower(regexp_replace(trim(full_name), '[[:space:]]+', ' ', 'g'))));
+
 alter table public.profiles enable row level security;
 alter table public.exam_attempts enable row level security;
 
@@ -96,6 +99,53 @@ $$;
 
 revoke all on function public.post_exam_resources() from public, anon, authenticated;
 
+-- Name-only recovery is intentionally convenient but is not identity verification.
+-- Anyone who knows a submitted participant's exact name can retrieve that result.
+create or replace function public.get_previous_result_by_name(
+  p_exam_version text,
+  p_full_name text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_attempt public.exam_attempts;
+  v_normalized_name text := lower(regexp_replace(trim(coalesce(p_full_name, '')), '[[:space:]]+', ' ', 'g'));
+begin
+  if v_user is null then raise exception 'กรุณาลงชื่อเข้าใช้'; end if;
+  if char_length(v_normalized_name) not between 2 and 120 then
+    raise exception 'กรุณากรอกชื่อ–นามสกุลให้ถูกต้อง';
+  end if;
+
+  select a.* into v_attempt
+  from public.exam_attempts a
+  join public.profiles p on p.id = a.user_id
+  where a.exam_version = p_exam_version
+    and a.status = 'submitted'
+    and lower(regexp_replace(trim(p.full_name), '[[:space:]]+', ' ', 'g')) = v_normalized_name
+  order by a.submitted_at desc, a.id desc
+  limit 1;
+
+  if not found then return null; end if;
+
+  return jsonb_build_object(
+    'score',v_attempt.score,
+    'max_score',v_attempt.max_score,
+    'duration_seconds',v_attempt.duration_seconds,
+    'submitted_at',v_attempt.submitted_at,
+    'details',v_attempt.details,
+    'post_exam_resources',public.post_exam_resources(),
+    'recovered',true
+  );
+end;
+$$;
+
+revoke all on function public.get_previous_result_by_name(text,text) from public, anon, authenticated;
+grant execute on function public.get_previous_result_by_name(text,text) to authenticated;
+
 create or replace function public.start_exam(p_exam_version text)
 returns jsonb
 language plpgsql
@@ -105,8 +155,20 @@ as $$
 declare
   v_user uuid := auth.uid();
   v_attempt public.exam_attempts;
+  v_full_name text;
+  v_previous_result jsonb;
 begin
   if v_user is null then raise exception 'กรุณาลงชื่อเข้าใช้'; end if;
+
+  select p.full_name into v_full_name
+  from public.profiles p
+  where p.id = v_user;
+  if not found then raise exception 'ไม่พบข้อมูลผู้เข้าสอบ'; end if;
+
+  v_previous_result := public.get_previous_result_by_name(p_exam_version, v_full_name);
+  if v_previous_result is not null then
+    return jsonb_build_object('status','submitted','result',v_previous_result);
+  end if;
 
   select * into v_attempt
   from public.exam_attempts
