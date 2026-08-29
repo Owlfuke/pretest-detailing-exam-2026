@@ -2,3 +2,5 @@ config.js
 .DS_Store
 Thumbs.db
 dist/
+node_modules/
+.wrangler/

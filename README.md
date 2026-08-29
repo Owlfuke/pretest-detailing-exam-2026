@@ -57,17 +57,18 @@ Publishable key เป็นคีย์สำหรับ browser และเ�
 
 ลิงก์ Google Drive และวิดีโอหลังสอบอยู่ใน `public.post_exam_resources()` ภายใน `supabase/schema.sql` ระบบจะเรียก function นี้เมื่อ attempt มีสถานะ `submitted` เท่านั้น
 
-## นำขึ้น Cloudflare Pages จาก Private GitHub repository
+## นำขึ้น Cloudflare Workers จาก Private GitHub repository
 
-เชื่อม Private repository กับ Cloudflare Pages แล้วตั้งค่า:
+โปรเจกต์นี้ใช้ Workers Static Assets และกำหนดโฟลเดอร์เผยแพร่ไว้ใน `wrangler.jsonc` แล้ว ให้เชื่อม Private repository กับ Workers Builds และตั้งค่า:
 
 - Build command: `npm run build`
-- Build output directory: `dist`
+- Deploy command: `npm run deploy`
+- Root directory: เว้นว่าง
 - Production branch: `main`
 
 คำสั่ง build จะคัดลอกเฉพาะหน้าเว็บและรูปข้อสอบไปยัง `dist` และหยุดทันทีหากตรวจพบ URL เอกสาร/วิดีโอหลังสอบ จึงไม่เผยแพร่ `supabase/schema.sql`, README หรือ answer key
 
-ห้ามตั้ง Build output directory เป็น `/` หรือ root repository เพราะจะทำให้ไฟล์ SQL และ answer key ถูกเสิร์ฟเป็นไฟล์เว็บไซต์ ต้องใช้ `dist` เท่านั้น
+ห้ามเปลี่ยน `assets.directory` เป็น `.` หรือ root repository เพราะจะทำให้ไฟล์ SQL และ answer key ถูกเสิร์ฟเป็นไฟล์เว็บไซต์ ต้องใช้ `./dist` เท่านั้น
 
 ## การเปลี่ยนข้อสอบ
 
