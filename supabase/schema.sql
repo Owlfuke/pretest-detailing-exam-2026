@@ -91,7 +91,7 @@ immutable
 set search_path = ''
 as $$
   select jsonb_build_array(
-    jsonb_build_object('label','เอกสารประกอบการอบรม Reinforced Concrete Detailing','url','https://drive.google.com/file/d/1wQbffeHzphCPCz1ULruFByYP9u8H7yfb/view?usp=sharing'),
+    jsonb_build_object('label','เอกสารประกอบการอบรม Reinforced Concrete Detailing','url','https://drive.google.com/file/d/1tPAJ60LcHa9I2u6jFB5D3xw8XWBlhBmB/view?usp=sharing'),
     jsonb_build_object('label','Lecture Reinforced Concrete Detailing — Part 1','url','https://youtu.be/MrbwCVn2XJE'),
     jsonb_build_object('label','Lecture Reinforced Concrete Detailing — Part 2','url','https://youtu.be/-KvpzvD8Zko')
   );

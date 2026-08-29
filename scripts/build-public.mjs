@@ -17,6 +17,7 @@ const forbidden = [
   "rittacoth-my.sharepoint.com",
   "IQCU0J6nUw-uT78aKb2SF",
   "drive.google.com/file/d/1wQbffeHzphCPCz1ULruFByYP9u8H7yfb",
+  "drive.google.com/file/d/1tPAJ60LcHa9I2u6jFB5D3xw8XWBlhBmB",
   "MrbwCVn2XJE",
   "KvpzvD8Zko",
 ];

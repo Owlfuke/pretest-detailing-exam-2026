@@ -13,6 +13,7 @@ const state = {
   attempt: JSON.parse(sessionStorage.getItem("rc-attempt") || "null"),
   timerHandle: null,
   result: JSON.parse(sessionStorage.getItem("rc-result") || "null"),
+  resultRefreshKey: null,
 };
 
 const questions = [
@@ -420,8 +421,32 @@ async function submitExam(event) {
   }
 }
 
+async function refreshCachedResult() {
+  if (config.demoMode || !state.session?.user || !state.result) return;
+  const refreshKey = `${state.session.user.id}:${state.result.submitted_at || "submitted"}`;
+  if (state.resultRefreshKey === refreshKey) return;
+  state.resultRefreshKey = refreshKey;
+
+  try {
+    let latestResult = await api.rpc("get_previous_result_by_name", {
+      p_exam_version: config.examVersion,
+      p_full_name: userName(),
+    });
+    if (Array.isArray(latestResult)) latestResult = latestResult[0];
+    if (!latestResult) return;
+
+    state.result = latestResult;
+    sessionStorage.setItem("rc-result", JSON.stringify(latestResult));
+    if (state.route === "results") renderResults();
+  } catch (error) {
+    state.resultRefreshKey = null;
+    showToast(`อัปเดตข้อมูลหลังสอบไม่สำเร็จ: ${error.message}`);
+  }
+}
+
 function renderResults() {
   if (!state.result) return go("home");
+  void refreshCachedResult();
   const result = state.result;
   const recovered = Boolean(result.recovered);
   const percentage = formatPercentage(result.score, result.max_score);
@@ -521,6 +546,7 @@ function logout() {
   sessionStorage.removeItem("rc-draft");
   sessionStorage.removeItem("rc-result");
   state.session = state.attempt = state.result = null;
+  state.resultRefreshKey = null;
   updateHeader(); go("home"); showToast("ออกจากระบบแล้ว");
 }
 
