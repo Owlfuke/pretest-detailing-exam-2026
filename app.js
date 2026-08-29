@@ -18,10 +18,10 @@ const questions = [
   {
     id: "q1", number: "1", title: "คำนวณค่าการเยื้องศูนย์ของฐานราก F5 ในแกน X และ Y พร้อมพิจารณาการผ่านเกณฑ์และการขยายฐานราก",
     image: "assets/questions/q1-pile-offset.png", alt: "ผังตำแหน่งเสาเข็ม F5 ตารางระยะคลาดเคลื่อนแกน X และ Y",
-    help: "กรอกค่าเป็นเซนติเมตร ใช้เครื่องหมายบวกหรือลบตามผลคำนวณ",
+    help: "กรอกค่าเป็นเซนติเมตร ใช้เครื่องหมายบวกหรือลบตามผลคำนวณ บนโทรศัพท์ให้กรอกตัวเลขแล้วแตะปุ่ม +/− เพื่อสลับเครื่องหมาย",
     fields: [
-      { name: "q1_x", label: "ค่าการเยื้องศูนย์แกน X (ซม.)", type: "number", step: "0.01" },
-      { name: "q1_y", label: "ค่าการเยื้องศูนย์แกน Y (ซม.)", type: "number", step: "0.01" },
+      { name: "q1_x", label: "ค่าการเยื้องศูนย์แกน X (ซม.)", type: "number", step: "0.01", signed: true },
+      { name: "q1_y", label: "ค่าการเยื้องศูนย์แกน Y (ซม.)", type: "number", step: "0.01", signed: true },
       { name: "q1_pass", label: "สรุปผลการตรวจสอบ", type: "select", options: [["pass","ผ่าน"],["fail","ไม่ผ่าน"]] },
       { name: "q1_expand", label: "ต้องขยายฐานรากหรือไม่", type: "select", options: [["yes","ต้องขยาย"],["no","ไม่ต้องขยาย"]] },
     ], columns: 2,
@@ -243,7 +243,37 @@ function fieldHtml(field) {
   if (field.type === "textarea") {
     return `<label style="grid-column:1/-1">${escapeHtml(field.label)}<textarea name="${field.name}" minlength="${field.minlength || 1}" required placeholder="อธิบายลำดับการทำงาน เหตุผล และผู้ที่ต้องประสานงาน"></textarea></label>`;
   }
-  return `<label>${escapeHtml(field.label)}<input name="${field.name}" type="number" step="${field.step || 1}" required inputmode="decimal" /></label>`;
+  const input = `<input name="${field.name}" type="number" step="${field.step || 1}" required inputmode="decimal" />`;
+  if (field.signed) {
+    return `<label>${escapeHtml(field.label)}<span class="signed-number-control">${input}<button class="sign-toggle" type="button" data-sign-target="${field.name}" aria-label="สลับค่าบวกหรือลบของ ${escapeHtml(field.label)}" aria-pressed="false">+/−</button></span></label>`;
+  }
+  return `<label>${escapeHtml(field.label)}${input}</label>`;
+}
+
+function setupSignedInputs(form) {
+  form.querySelectorAll("[data-sign-target]").forEach((button) => {
+    const input = form.elements[button.dataset.signTarget];
+    if (!input) return;
+
+    const sync = () => {
+      const negative = String(input.value).startsWith("-");
+      button.disabled = input.value === "";
+      button.classList.toggle("negative", negative);
+      button.setAttribute("aria-pressed", String(negative));
+      button.title = negative ? "ค่าปัจจุบันเป็นลบ" : "ค่าปัจจุบันเป็นบวก";
+    };
+
+    button.addEventListener("click", () => {
+      const value = input.value.trim();
+      if (!value) return;
+      input.value = value.startsWith("-") ? value.slice(1) : `-${value}`;
+      sync();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    });
+    input.addEventListener("input", sync);
+    sync();
+  });
 }
 
 function questionHtml(question) {
@@ -271,6 +301,7 @@ function renderExam() {
     </form>`;
   const form = document.querySelector("#exam-form");
   restoreDraft(form);
+  setupSignedInputs(form);
   form.addEventListener("input", () => { saveDraft(form); updateProgress(form); });
   form.addEventListener("submit", submitExam);
   document.querySelectorAll("[data-target]").forEach((button) => button.addEventListener("click", () => document.querySelector(`#question-${button.dataset.target}`).scrollIntoView({ behavior: "smooth" })));

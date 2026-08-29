@@ -102,6 +102,11 @@ main { flex: 1; }
 label { display: grid; gap: 7px; color: var(--navy-2); font-weight: 600; }
 input, select, textarea { width: 100%; border: 1px solid #b8c5d1; border-radius: 4px; padding: 11px 12px; color: var(--ink); background: white; outline: none; }
 input:focus, select:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(15,118,110,.11); }
+.signed-number-control { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 8px; }
+.sign-toggle { min-height: 48px; border: 1px solid var(--teal); border-radius: 4px; color: var(--teal); background: #eef8f6; font-weight: 800; }
+.sign-toggle.negative { color: white; background: var(--teal); }
+.sign-toggle:disabled { cursor: not-allowed; opacity: .45; }
+.sign-toggle:focus-visible { outline: 3px solid rgba(15,118,110,.2); outline-offset: 2px; }
 textarea { min-height: 125px; resize: vertical; line-height: 1.65; }
 .choice-list { display: grid; gap: 10px; margin-top: 24px; }
 .choice { display: grid; grid-template-columns: 22px 1fr; align-items: start; gap: 10px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 4px; font-weight: 500; background: #fbfcfd; }
