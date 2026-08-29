@@ -40,7 +40,7 @@ python -m http.server 8080
 2. เปิด SQL Editor และรันไฟล์ `supabase/schema.sql` ทั้งไฟล์
 3. ใน Authentication > URL Configuration ใส่ URL เว็บไซต์จริงใน Site URL และ Redirect URLs
 4. คัดลอก Project URL และ Publishable key (`sb_publishable_...`) จาก Connect หรือ Settings > API Keys
-5. แก้ `config.js`:
+5. แก้ `config.js` เมื่อต้องการย้ายไปใช้ Supabase project อื่น:
 
 ```js
 window.APP_CONFIG = {
@@ -58,7 +58,7 @@ Publishable key เป็นคีย์สำหรับ browser และเ�
 
 ## นำขึ้น GitHub
 
-แนะนำให้สร้าง private repository แล้วอัปโหลดเนื้อหาในโฟลเดอร์นี้เป็น root ของ repository จากนั้นเพิ่ม Repository Secrets ชื่อ `SUPABASE_URL` และ `SUPABASE_PUBLISHABLE_KEY` แล้วเปิด GitHub Pages โดยเลือก Source เป็น **GitHub Actions** workflow ที่ให้มาจะเผยแพร่เฉพาะไฟล์หน้าเว็บ ไม่เผยแพร่ `supabase/schema.sql`, README หรือ answer key
+สร้าง private repository แล้วเปิด GitHub Pages โดยเลือก Source เป็น **GitHub Actions** workflow ที่ให้มา ระบบจะเผยแพร่เฉพาะไฟล์หน้าเว็บ ไม่เผยแพร่ `supabase/schema.sql`, README หรือ answer key ค่า Project URL และ Publishable key อยู่ใน `config.example.js` เพราะเป็นค่าที่ออกแบบให้เปิดเผยใน browser ได้
 
 ห้ามเลือก Deploy from branch/root เพราะอาจทำให้ไฟล์ SQL และ answer key ถูกเสิร์ฟเป็นไฟล์เว็บไซต์ ให้ใช้ `.github/workflows/deploy-pages.yml` เท่านั้น แม้ URL และ anon key จะเป็นค่าฝั่ง client ที่เปิดเผยได้ แต่ answer key และ URL วิดีโอหลังสอบต้องไม่อยู่ใน deployment artifact
 
